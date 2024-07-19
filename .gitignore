@@ -1,2 +1,3 @@
 .env
 hotels.csv
+processed_hotel_selected.csv

@@ -1,6 +1,4 @@
 import pandas as pd
-from sklearn.feature_extraction.text import TfidfVectorizer
-from sklearn.decomposition import PCA
 import chromadb
 import csv
 
@@ -9,7 +7,7 @@ encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
 
 for encoding in encodings:
     try:
-        df = pd.read_csv('hotels.csv', encoding=encoding, nrows=100)
+        df = pd.read_csv('hotels.csv', encoding=encoding)
         print(f"Successfully read the file with {encoding} encoding")
         break
     except UnicodeDecodeError:
@@ -39,44 +37,33 @@ with open('country_city_mapping.csv', 'w', newline='', encoding='utf-8') as csvf
     for country, cities in country_city_mapping.items():
         writer.writerow([country, ', '.join(cities)])
 
-# TF-IDF 벡터화기 초기화
-vectorizer_description = TfidfVectorizer()
-
-# Description 벡터화
-description_tfidf_matrix = vectorizer_description.fit_transform(df_selected['Description'])
-print(f"Description TF-IDF Matrix Shape: {description_tfidf_matrix.shape}")
-
-# PCA를 사용하여 차원 축소 (예: 50차원으로 축소)
-pca = PCA(n_components=50)
-reduced_matrix = pca.fit_transform(description_tfidf_matrix.toarray())
-print(f"Reduced Matrix Shape: {reduced_matrix.shape}")
-
 # Chroma 클라이언트 초기화 (기본 설정 사용)
 client = chromadb.Client()
 
 # Chroma 컬렉션 생성
 collection = client.create_collection("hotel_vectors")
 
-# 벡터 데이터를 Chroma에 추가
+# Description 컬럼을 벡터화하고 Chroma에 추가
 ids = []
 embeddings = []
 embedding_rows = []
 
 for index, row in df_selected.iterrows():
-    reduced_vector = reduced_matrix[index].tolist()
+    description = row['Description']
+    vector = client.encode(description)  # Chroma의 인코딩 메소드를 사용하여 벡터화
     ids.append(str(index))
-    embeddings.append(reduced_vector)
-    embedding_rows.append([row['countyName'], row['cityName'], row['HotelName'], row['HotelRating'], row['Address'], row['HotelFacilities'], reduced_vector])
+    embeddings.append(vector)
+    embedding_rows.append([row['countyName'], row['cityName'], row['HotelName'], vector])
 
 collection.add(ids=ids, embeddings=embeddings)
 
 # 벡터 데이터를 CSV 파일로 저장
 with open('hotel_vectors_reduced.csv', 'w', newline='', encoding='utf-8') as csvfile:
     writer = csv.writer(csvfile)
-    header = ['countyName', 'cityName', 'HotelName', 'HotelRating', 'Address', 'HotelFacilities', 'DescriptionVector']
+    header = ['countyName', 'cityName', 'HotelName'] + [f'vector_{i}' for i in range(len(embeddings[0]))]
     writer.writerow(header)
     for row in embedding_rows:
-        writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
+        writer.writerow([row[0], row[1], row[2]] + row[3])
 
 # 데이터 저장 확인을 위한 검색 예제
 query_vector = embeddings[0]  # 첫 번째 벡터를 예제로 사용
