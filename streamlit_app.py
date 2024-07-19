@@ -3,7 +3,7 @@ import pandas as pd
 
 # 국가-도시 매핑 데이터 로드 함수
 def load_country_city_mapping():
-    csv_file_path = '/Users/newuser/HPC_accommodation_recommender/country_city_mapping.csv'
+    csv_file_path = 'country_city_mapping.csv'
     return pd.read_csv(csv_file_path)
 
 # 숙박 데이터 로드 함수
@@ -43,7 +43,7 @@ def main():
     hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
 
     # 유저 추가 요구사항 입력
-    additional_requirements = st.sidebar.text_area("추가 요구사항", "예: 무료 Wi-Fi, 조식 포함")
+    additional_requirements = st.sidebar.text_area("")
 
     # 검색 버튼
     if st.sidebar.button("검색"):
@@ -60,7 +60,7 @@ def main():
     if 'filtered_df' in st.session_state:
         filtered_df = st.session_state['filtered_df']
 
-        ai_recommanded_flag = False
+        ai_recommanded_flag = additional_requirements != ""
 
         # 결과 출력
         st.subheader("조건에 맞는 숙소")
