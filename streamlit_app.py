@@ -1,17 +1,19 @@
 import streamlit as st
 import pandas as pd
 
+
 # 국가-도시 매핑 데이터 로드 함수
 def load_country_city_mapping():
     return pd.read_csv('country_city_mapping.csv')
+
 
 # 숙박 데이터 로드 함수
 def load_data():
     # 예시 데이터 프레임
     data = {
         '숙소명': [f'호텔 {chr(65 + i)}' for i in range(20)],
-        '나라': ['한국'] * 20,
-        '도시': ['서울'] * 20,
+        '나라': ['Albania'] * 20,
+        '도시': ['Albanien'] * 20,
         '호텔 등급': [5, 4, 4, 3, 5, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 3, 5, 4, 3],
         '편의시설': ['Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함',
                  '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함', '주차 가능, 수영장',
@@ -19,6 +21,7 @@ def load_data():
                  'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차']
     }
     return pd.DataFrame(data)
+
 
 # 메인 함수
 def main():
@@ -42,7 +45,7 @@ def main():
     hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
 
     # 유저 추가 요구사항 입력
-    additional_requirements = st.sidebar.text_area("추가 요구사항", "예: 무료 Wi-Fi, 조식 포함")
+    additional_requirements = st.sidebar.text_area("")
 
     # 검색 버튼
     if st.sidebar.button("검색"):
@@ -54,9 +57,16 @@ def main():
             (df['편의시설'].str.contains(additional_requirements, case=False))
         ]
 
+        ai_recommanded_flag = False
+
         # 결과 출력
-        st.subheader("추천 숙소")
+        st.subheader("조건에 맞는 숙소")
         if not filtered_df.empty:
+            if ai_recommanded_flag:
+                st.write("")
+                st.subheader("⭐ AI 추천 숙소!")
+                st.write("추가된 글자 예시입니다.")
+
             num_rows = len(filtered_df)
             max_cols = 3
             num_full_rows = num_rows // max_cols
@@ -119,6 +129,7 @@ def main():
                         st.markdown(card_html, unsafe_allow_html=True)
         else:
             st.write("조건에 맞는 숙소가 없습니다.")
+
 
 if __name__ == "__main__":
     main()
