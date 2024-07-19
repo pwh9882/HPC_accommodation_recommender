@@ -1,11 +1,10 @@
 import streamlit as st
 import pandas as pd
 
-
 # 국가-도시 매핑 데이터 로드 함수
 def load_country_city_mapping():
-    return pd.read_csv('country_city_mapping.csv')
-
+    csv_file_path = '/Users/newuser/HPC_accommodation_recommender/country_city_mapping.csv'
+    return pd.read_csv(csv_file_path)
 
 # 숙박 데이터 로드 함수
 def load_data():
@@ -21,7 +20,6 @@ def load_data():
                  'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차']
     }
     return pd.DataFrame(data)
-
 
 # 메인 함수
 def main():
@@ -45,7 +43,7 @@ def main():
     hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
 
     # 유저 추가 요구사항 입력
-    additional_requirements = st.sidebar.text_area("")
+    additional_requirements = st.sidebar.text_area("추가 요구사항", "예: 무료 Wi-Fi, 조식 포함")
 
     # 검색 버튼
     if st.sidebar.button("검색"):
@@ -56,6 +54,11 @@ def main():
             (df['호텔 등급'] >= hotel_rating) &
             (df['편의시설'].str.contains(additional_requirements, case=False))
         ]
+        st.session_state['filtered_df'] = filtered_df
+
+    # 이전 검색 결과가 있는 경우 이를 유지
+    if 'filtered_df' in st.session_state:
+        filtered_df = st.session_state['filtered_df']
 
         ai_recommanded_flag = False
 
@@ -93,6 +96,12 @@ def main():
             .container .card {
                 margin: 5% 0;
             }
+            @media (prefers-color-scheme:dark) {
+            .card{
+                background-color: #333;
+                color : #fff;
+            }
+            }
             </style>
             """
 
@@ -129,7 +138,6 @@ def main():
                         st.markdown(card_html, unsafe_allow_html=True)
         else:
             st.write("조건에 맞는 숙소가 없습니다.")
-
 
 if __name__ == "__main__":
     main()
