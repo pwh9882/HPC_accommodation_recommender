@@ -6,14 +6,8 @@ from rag_llm import RAGLLM
 hotel_star_number_to_str = ["All", "OneStar", "TwoStar", "ThreeStar", "FourStar", "FiveStar"]
 
 
-# 국가-cityName 매핑 데이터 로드 함수
-def load_countyName_city_mapping():
-    csv_file_path = 'countyName_city_mapping.csv'
-    return pd.read_csv(csv_file_path)
-
 # 숙박 데이터 로드 함수
 def load_data():
-    # data = pd.read_csv("merged_data2.csv")
     data = pd.read_csv("csvs/processed_hotel_info2.csv")
     return pd.DataFrame(data)
 
