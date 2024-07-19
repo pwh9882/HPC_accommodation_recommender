@@ -55,10 +55,13 @@ if df is not None:
         "Yemen Republic", "Zambia", "Zimbabwe"
     ]
 
+    # 전체 데이터를 담을 리스트
+    total_data = []
+
     for country in countries:
         # 나라별로 100개씩 조정
-        df_country = df[df['countyName'].str.contains(country, case=False, na=False)]
-        df_country = df_country.head(100)
+        df_country = df[df['countyName'].str.contains(country, case=False, na=False, regex=False)]
+        df_country = df_country.head(50)
 
         # Description이 비어있는 것은 빼기
         df_country_filtered = df_country[df_country['Description'].notna() & df_country['Description'].str.strip().astype(bool)]
@@ -67,6 +70,17 @@ if df is not None:
         output_file_path = os.path.join(output_dir, f'{country}.csv')
         df_country_filtered.to_csv(output_file_path, index=False)
         print(f"Data for '{country}' saved to '{output_file_path}'")
+
+        # 전체 데이터 리스트에 추가
+        total_data.append(df_country_filtered)
+
+    # 전체 데이터를 하나의 데이터프레임으로 결합
+    df_total = pd.concat(total_data, ignore_index=True)
+
+    # 전체 데이터를 CSV 파일로 저장
+    total_output_file_path = os.path.join(output_dir, 'zz_last_postion_country_zip.csv')
+    df_total.to_csv(total_output_file_path, index=False)
+    print(f"Combined data saved to '{total_output_file_path}'")
 
 else:
     print("DataFrame not created. Please check the file path and encoding.")
