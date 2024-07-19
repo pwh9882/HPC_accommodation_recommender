@@ -2,7 +2,12 @@ import streamlit as st
 import pandas as pd
 
 
-# 데이터 로드 함수
+# 국가-도시 매핑 데이터 로드 함수
+def load_country_city_mapping():
+    return pd.read_csv('country_city_mapping.csv')
+
+
+# 숙박 데이터 로드 함수
 def load_data():
     # 예시 데이터 프레임
     data = {
@@ -24,22 +29,28 @@ def main():
     st.write("원하는 조건을 선택하고 추천 숙소를 확인하세요.")
 
     # 데이터 로드
+    country_city_mapping = load_country_city_mapping()
     df = load_data()
 
     # 필터링 옵션
     st.sidebar.header("필터 옵션")
-    country = st.sidebar.selectbox("나라", df['나라'].unique())
-    cities = df[df['나라'] == country]['도시'].unique()
-    city = st.sidebar.selectbox("도시", cities)
+    selected_country = st.sidebar.selectbox("나라", country_city_mapping['Country'].unique())
+
+    cities_string = country_city_mapping[country_city_mapping['Country'] == selected_country]['Cities'].unique()[0]
+    cities = cities_string.split(", ")
+
+    # 선택된 국가에 따라 도시 선택
+    selected_city = st.sidebar.selectbox("도시", cities)
+
     hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
 
     # 유저 추가 요구사항 입력
-    additional_requirements = st.sidebar.text_area("")
+    additional_requirements = st.sidebar.text_area("추가 요구사항", "예: 무료 Wi-Fi, 조식 포함")
 
     # 필터링
     filtered_df = df[
-        (df['나라'] == country) &
-        (df['도시'] == city) &
+        (df['나라'] == selected_country) &
+        (df['도시'] == selected_city) &
         (df['호텔 등급'] >= hotel_rating) &
         (df['편의시설'].str.contains(additional_requirements, case=False))
         ]
