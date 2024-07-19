@@ -1,6 +1,8 @@
 import streamlit as st
 import pandas as pd
 
+hotel_star_number_to_str = ["All", "OneStar", "TwoStar", "ThreeStar", "FourStar", "FiveStar"]
+
 # 국가-도시 매핑 데이터 로드 함수
 def load_country_city_mapping():
     csv_file_path = 'country_city_mapping.csv'
@@ -21,6 +23,13 @@ def load_data():
     }
     return pd.DataFrame(data)
 
+
+# Dummy
+class RAGLLM:
+    def query_to_llm(self, country_name="", city_name="", hotel_rating="", user_query=""):
+        return None, None
+
+
 # 메인 함수
 def main():
     st.title("숙박 추천 앱")
@@ -40,10 +49,17 @@ def main():
     # 선택된 국가에 따라 도시 선택
     selected_city = st.sidebar.selectbox("도시", cities)
 
-    hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
+    # 호텔 등급 필터링
+    all_ratings = st.sidebar.checkbox("모든 호텔 등급 ")
+    if all_ratings:
+        hotel_rating = 0
+    else:
+        hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
 
     # 유저 추가 요구사항 입력
     additional_requirements = st.sidebar.text_area("")
+
+    ai_recommanded_flag = False
 
     # 검색 버튼
     if st.sidebar.button("검색"):
@@ -54,13 +70,35 @@ def main():
             (df['호텔 등급'] >= hotel_rating) &
             (df['편의시설'].str.contains(additional_requirements, case=False))
         ]
+        hotel_rating_str = hotel_star_number_to_str[hotel_rating]
+
         st.session_state['filtered_df'] = filtered_df
+
+        ai_recommanded_flag = additional_requirements.strip()
+        if additional_requirements.strip():
+            rag_llm = RAGLLM()
+            result, infos = rag_llm.query_to_llm(
+                country_name=selected_country,
+                city_name=selected_city,
+                hotel_rating=hotel_rating_str,
+                user_query=additional_requirements
+            )
+
+            print("\n호텔 상세 정보:")
+            print(result)
+            for hotel_info in infos:
+                print(f"호텔명: {hotel_info['HotelName']}")
+                print(f"주소: {hotel_info['Address']}")
+                print(f"등급: {hotel_info['HotelRating']} 성급")
+                print(f"설명: {hotel_info['Description'][:200]}…")
+                print("—")
+
+            st.session_state['filtered_df'] = filtered_df
+
 
     # 이전 검색 결과가 있는 경우 이를 유지
     if 'filtered_df' in st.session_state:
         filtered_df = st.session_state['filtered_df']
-
-        ai_recommanded_flag = additional_requirements != ""
 
         # 결과 출력
         st.subheader("조건에 맞는 숙소")
