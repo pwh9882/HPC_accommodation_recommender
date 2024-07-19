@@ -23,12 +23,10 @@ def load_data():
     }
     return pd.DataFrame(data)
 
-
 # Dummy
 class RAGLLM:
     def query_to_llm(self, country_name="", city_name="", hotel_rating="", user_query=""):
         return None, None
-
 
 # 메인 함수
 def main():
@@ -43,11 +41,15 @@ def main():
     st.sidebar.header("필터 옵션")
     selected_country = st.sidebar.selectbox("나라", country_city_mapping['Country'].unique())
 
+    st.sidebar.markdown("---")
+
     cities_string = country_city_mapping[country_city_mapping['Country'] == selected_country]['Cities'].unique()[0]
     cities = cities_string.split(", ")
 
     # 선택된 국가에 따라 도시 선택
     selected_city = st.sidebar.selectbox("도시", cities)
+
+    st.sidebar.markdown("---")
 
     # 호텔 등급 필터링
     all_ratings = st.sidebar.checkbox("모든 호텔 등급 ")
@@ -56,8 +58,12 @@ def main():
     else:
         hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
 
+    st.sidebar.markdown("---")
+
     # 유저 추가 요구사항 입력
-    additional_requirements = st.sidebar.text_area("")
+    additional_requirements = st.sidebar.text_area("요구사항")
+
+    st.sidebar.markdown("---")
 
     ai_recommanded_flag = False
 
@@ -94,7 +100,6 @@ def main():
                 print("—")
 
             st.session_state['filtered_df'] = filtered_df
-
 
     # 이전 검색 결과가 있는 경우 이를 유지
     if 'filtered_df' in st.session_state:
