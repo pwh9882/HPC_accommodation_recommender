@@ -39,7 +39,7 @@ def main():
 
     # 필터링 옵션
     st.sidebar.header("필터 옵션")
-    selected_country = st.sidebar.selectbox("나라", country_city_mapping['Country'].unique())
+    selected_country = st.sidebar.selectbox("국가", country_city_mapping['Country'].unique())
 
     st.sidebar.markdown("---")
 
@@ -71,7 +71,7 @@ def main():
     if st.sidebar.button("검색"):
         # 필터링
         filtered_df = df[
-            (df['나라'] == selected_country) &
+            (df['국가'] == selected_country) &
             (df['도시'] == selected_city) &
             (df['호텔 등급'] >= hotel_rating) &
             (df['편의시설'].str.contains(additional_requirements, case=False))
@@ -157,7 +157,7 @@ def main():
                         card_html = f"""
                         <div class="card">
                             <h3>{filtered_df.iloc[row * max_cols + idx]['숙소명']}</h3>
-                            <p><strong>나라:</strong> {filtered_df.iloc[row * max_cols + idx]['나라']}</p>
+                            <p><strong>국가:</strong> {filtered_df.iloc[row * max_cols + idx]['국가']}</p>
                             <p><strong>도시:</strong> {filtered_df.iloc[row * max_cols + idx]['도시']}</p>
                             <p><strong>호텔 등급:</strong> {filtered_df.iloc[row * max_cols + idx]['호텔 등급']}성급</p>
                             <p><strong>편의시설:</strong> {filtered_df.iloc[row * max_cols + idx]['편의시설']}</p>
@@ -172,7 +172,7 @@ def main():
                         card_html = f"""
                         <div class="card">
                             <h3>{filtered_df.iloc[num_full_rows * max_cols + idx]['숙소명']}</h3>
-                            <p><strong>나라:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['나라']}</p>
+                            <p><strong>국가:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['국가']}</p>
                             <p><strong>도시:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['도시']}</p>
                             <p><strong>호텔 등급:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['호텔 등급']}성급</p>
                             <p><strong>편의시설:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['편의시설']}</p>
