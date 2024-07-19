@@ -1,6 +1,8 @@
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
+from sklearn.decomposition import PCA
 import chromadb
+import csv
 
 # 다양한 인코딩 형식을 시도해보기
 encodings = ['utf-8', 'latin1', 'iso-8859-1', 'cp1252']
@@ -27,18 +29,27 @@ df_selected['Description'] = df_selected['Description'].fillna('')
 # 전처리된 원본 데이터를 CSV 파일로 저장
 df_selected.to_csv('processed_hotel_selected.csv', index=False)
 
-# 나라별 도시 매핑 생성
-country_city_mapping = df_selected.groupby('countyName')['cityName'].apply(list).to_dict()
+# 나라별 도시 매핑 생성 (중복 제거)
+country_city_mapping = df_selected.groupby('countyName')['cityName'].apply(lambda x: list(set(x))).to_dict()
+
+# 나라별 도시 매핑을 CSV 파일로 저장
+with open('country_city_mapping.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    writer = csv.writer(csvfile)
+    writer.writerow(['Country', 'Cities'])
+    for country, cities in country_city_mapping.items():
+        writer.writerow([country, ', '.join(cities)])
 
 # TF-IDF 벡터화기 초기화
-vectorizer_country = TfidfVectorizer()
 vectorizer_description = TfidfVectorizer()
-
-# countyName 벡터화
-country_tfidf_matrix = vectorizer_country.fit_transform(df_selected['countyName'])
 
 # Description 벡터화
 description_tfidf_matrix = vectorizer_description.fit_transform(df_selected['Description'])
+print(f"Description TF-IDF Matrix Shape: {description_tfidf_matrix.shape}")
+
+# PCA를 사용하여 차원 축소 (예: 50차원으로 축소)
+pca = PCA(n_components=50)
+reduced_matrix = pca.fit_transform(description_tfidf_matrix.toarray())
+print(f"Reduced Matrix Shape: {reduced_matrix.shape}")
 
 # Chroma 클라이언트 초기화 (기본 설정 사용)
 client = chromadb.Client()
@@ -49,15 +60,23 @@ collection = client.create_collection("hotel_vectors")
 # 벡터 데이터를 Chroma에 추가
 ids = []
 embeddings = []
+embedding_rows = []
 
-for index in range(len(df_selected)):
-    country_vector = country_tfidf_matrix[index].toarray().flatten().tolist()
-    description_vector = description_tfidf_matrix[index].toarray().flatten().tolist()
-    combined_vector = country_vector + description_vector
+for index, row in df_selected.iterrows():
+    reduced_vector = reduced_matrix[index].tolist()
     ids.append(str(index))
-    embeddings.append(combined_vector)
+    embeddings.append(reduced_vector)
+    embedding_rows.append([row['countyName'], row['cityName'], row['HotelName'], row['HotelRating'], row['Address'], row['HotelFacilities'], reduced_vector])
 
 collection.add(ids=ids, embeddings=embeddings)
+
+# 벡터 데이터를 CSV 파일로 저장
+with open('hotel_vectors_reduced.csv', 'w', newline='', encoding='utf-8') as csvfile:
+    writer = csv.writer(csvfile)
+    header = ['countyName', 'cityName', 'HotelName', 'HotelRating', 'Address', 'HotelFacilities', 'DescriptionVector']
+    writer.writerow(header)
+    for row in embedding_rows:
+        writer.writerow([row[0], row[1], row[2], row[3], row[4], row[5], row[6]])
 
 # 데이터 저장 확인을 위한 검색 예제
 query_vector = embeddings[0]  # 첫 번째 벡터를 예제로 사용
@@ -74,7 +93,7 @@ else:
 # 나라별 도시 매핑 출력
 print("Country-City Mapping:")
 for country, cities in country_city_mapping.items():
-    print(f"{country}: {cities}")
+    print(f"{country}: {', '.join(cities)}")
 
 # 데이터프레임의 첫 몇 줄 확인
 print(df_selected.head())
