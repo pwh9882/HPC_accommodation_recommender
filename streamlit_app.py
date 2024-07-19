@@ -3,7 +3,7 @@ import pandas as pd
 
 hotel_star_number_to_str = ["All", "OneStar", "TwoStar", "ThreeStar", "FourStar", "FiveStar"]
 
-# 국가-도시 매핑 데이터 로드 함수
+# 나라-도시 매핑 데이터 로드 함수
 def load_country_city_mapping():
     csv_file_path = 'country_city_mapping.csv'
     return pd.read_csv(csv_file_path)
@@ -13,7 +13,7 @@ def load_data():
     # 예시 데이터 프레임
     data = {
         '숙소명': [f'호텔 {chr(65 + i)}' for i in range(20)],
-        '국가': ['Albania'] * 20,
+        '나라': ['Albania'] * 20,
         '도시': ['Albanien'] * 20,
         '호텔 등급': [5, 4, 4, 3, 5, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 3, 5, 4, 3],
         '편의시설': ['Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함',
@@ -39,14 +39,14 @@ def main():
 
     # 필터링 옵션
     st.sidebar.header("필터 옵션")
-    selected_country = st.sidebar.selectbox("국가", country_city_mapping['Country'].unique())
+    selected_country = st.sidebar.selectbox("나라", country_city_mapping['Country'].unique())
 
     st.sidebar.markdown("---")
 
     cities_string = country_city_mapping[country_city_mapping['Country'] == selected_country]['Cities'].unique()[0]
     cities = cities_string.split(", ")
 
-    # 선택된 국가에 따라 도시 선택
+    # 선택된 나라에 따라 도시 선택
     selected_city = st.sidebar.selectbox("도시", cities)
 
     st.sidebar.markdown("---")
@@ -71,7 +71,7 @@ def main():
     if st.sidebar.button("검색"):
         # 필터링
         filtered_df = df[
-            (df['국가'] == selected_country) &
+            (df['나라'] == selected_country) &
             (df['도시'] == selected_city) &
             (df['호텔 등급'] >= hotel_rating) &
             (df['편의시설'].str.contains(additional_requirements, case=False))
@@ -157,7 +157,7 @@ def main():
                         card_html = f"""
                         <div class="card">
                             <h3>{filtered_df.iloc[row * max_cols + idx]['숙소명']}</h3>
-                            <p><strong>국가:</strong> {filtered_df.iloc[row * max_cols + idx]['국가']}</p>
+                            <p><strong>나라:</strong> {filtered_df.iloc[row * max_cols + idx]['나라']}</p>
                             <p><strong>도시:</strong> {filtered_df.iloc[row * max_cols + idx]['도시']}</p>
                             <p><strong>호텔 등급:</strong> {filtered_df.iloc[row * max_cols + idx]['호텔 등급']}성급</p>
                             <p><strong>편의시설:</strong> {filtered_df.iloc[row * max_cols + idx]['편의시설']}</p>
@@ -172,7 +172,7 @@ def main():
                         card_html = f"""
                         <div class="card">
                             <h3>{filtered_df.iloc[num_full_rows * max_cols + idx]['숙소명']}</h3>
-                            <p><strong>국가:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['국가']}</p>
+                            <p><strong>나라:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['나라']}</p>
                             <p><strong>도시:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['도시']}</p>
                             <p><strong>호텔 등급:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['호텔 등급']}성급</p>
                             <p><strong>편의시설:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['편의시설']}</p>
