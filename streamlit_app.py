@@ -1,32 +1,22 @@
 import streamlit as st
 import pandas as pd
 
+from rag_llm import RAGLLM
+
 hotel_star_number_to_str = ["All", "OneStar", "TwoStar", "ThreeStar", "FourStar", "FiveStar"]
 
-# 나라-도시 매핑 데이터 로드 함수
-def load_country_city_mapping():
-    csv_file_path = 'country_city_mapping.csv'
+
+# 국가-cityName 매핑 데이터 로드 함수
+def load_countyName_city_mapping():
+    csv_file_path = 'countyName_city_mapping.csv'
     return pd.read_csv(csv_file_path)
 
 # 숙박 데이터 로드 함수
 def load_data():
-    # 예시 데이터 프레임
-    data = {
-        '숙소명': [f'호텔 {chr(65 + i)}' for i in range(20)],
-        '나라': ['Albania'] * 20,
-        '도시': ['Albanien'] * 20,
-        '호텔 등급': [5, 4, 4, 3, 5, 4, 3, 5, 4, 3, 5, 4, 4, 3, 5, 4, 3, 5, 4, 3],
-        '편의시설': ['Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함',
-                 '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함', '주차 가능, 수영장',
-                 '반려동물 동반 가능', 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능',
-                 'Wi-Fi, 무료 주차', 'Wi-Fi, 조식 포함', '주차 가능, 수영장', '반려동물 동반 가능', 'Wi-Fi, 무료 주차']
-    }
+    # data = pd.read_csv("merged_data2.csv")
+    data = pd.read_csv("csvs/processed_hotel_info2.csv")
     return pd.DataFrame(data)
 
-# Dummy
-class RAGLLM:
-    def query_to_llm(self, country_name="", city_name="", hotel_rating="", user_query=""):
-        return None, None
 
 # 메인 함수
 def main():
@@ -34,36 +24,28 @@ def main():
     st.write("원하는 조건을 선택하고 추천 숙소를 확인하세요.")
 
     # 데이터 로드
-    country_city_mapping = load_country_city_mapping()
     df = load_data()
+    countyName_city_mapping = df
 
     # 필터링 옵션
     st.sidebar.header("필터 옵션")
-    selected_country = st.sidebar.selectbox("나라", country_city_mapping['Country'].unique())
+    selected_countyName = st.sidebar.selectbox("국가 이름", countyName_city_mapping['countyName'].unique())
 
-    st.sidebar.markdown("---")
-
-    cities_string = country_city_mapping[country_city_mapping['Country'] == selected_country]['Cities'].unique()[0]
+    cities_string = countyName_city_mapping[countyName_city_mapping['countyName'] == selected_countyName]['cityName'].unique()[0]
     cities = cities_string.split(", ")
 
-    # 선택된 나라에 따라 도시 선택
-    selected_city = st.sidebar.selectbox("도시", cities)
+    # 선택된 국가에 따라 cityName 선택
+    selected_city = st.sidebar.selectbox("도시 이름", cities)
 
-    st.sidebar.markdown("---")
-
-    # 호텔 등급 필터링
-    all_ratings = st.sidebar.checkbox("모든 호텔 등급 ")
+    # HotelRating 필터링
+    all_ratings = st.sidebar.checkbox("모든 HotelRating ")
     if all_ratings:
         hotel_rating = 0
     else:
-        hotel_rating = st.sidebar.slider("호텔 등급", 1, 5, 3)
-
-    st.sidebar.markdown("---")
+        hotel_rating = st.sidebar.slider("HotelRating", 1, 5, 3)
 
     # 유저 추가 요구사항 입력
-    additional_requirements = st.sidebar.text_area("요구사항")
-
-    st.sidebar.markdown("---")
+    additional_requirements = st.sidebar.text_area("")
 
     ai_recommanded_flag = False
 
@@ -71,10 +53,8 @@ def main():
     if st.sidebar.button("검색"):
         # 필터링
         filtered_df = df[
-            (df['나라'] == selected_country) &
-            (df['도시'] == selected_city) &
-            (df['호텔 등급'] >= hotel_rating) &
-            (df['편의시설'].str.contains(additional_requirements, case=False))
+            (df['countyName'] == selected_countyName) &
+            (df['cityName'] == selected_city)
         ]
         hotel_rating_str = hotel_star_number_to_str[hotel_rating]
 
@@ -84,11 +64,13 @@ def main():
         if additional_requirements.strip():
             rag_llm = RAGLLM()
             result, infos = rag_llm.query_to_llm(
-                country_name=selected_country,
-                city_name=selected_city,
                 hotel_rating=hotel_rating_str,
+                country_name=selected_countyName,
+                city_name=selected_city,
                 user_query=additional_requirements
             )
+
+            st.session_state['result'] = result
 
             print("\n호텔 상세 정보:")
             print(result)
@@ -99,7 +81,16 @@ def main():
                 print(f"설명: {hotel_info['Description'][:200]}…")
                 print("—")
 
-            st.session_state['filtered_df'] = filtered_df
+            print("infos type: ", type(infos))
+            print("infos[0] type: ", type(infos[0]))
+            infos = pd.concat(infos, ignore_index=True)
+
+            infos = infos[
+                (infos['HotelRating'] == hotel_star_number_to_str[hotel_rating])
+            ]
+
+            st.session_state['filtered_df'] = infos
+
 
     # 이전 검색 결과가 있는 경우 이를 유지
     if 'filtered_df' in st.session_state:
@@ -111,7 +102,7 @@ def main():
             if ai_recommanded_flag:
                 st.write("")
                 st.subheader("⭐ AI 추천 숙소!")
-                st.write("추가된 글자 예시입니다.")
+                st.write(st.session_state['result'])
 
             num_rows = len(filtered_df)
             max_cols = 3
@@ -127,7 +118,7 @@ def main():
                 border-radius: 10px;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.1);
                 width: 100%;
-                height: 250px;
+                height: 350px;
                 overflow: hidden;
                 flex-grow: 1;
             }
@@ -156,11 +147,11 @@ def main():
                     with cols[idx]:
                         card_html = f"""
                         <div class="card">
-                            <h3>{filtered_df.iloc[row * max_cols + idx]['숙소명']}</h3>
-                            <p><strong>나라:</strong> {filtered_df.iloc[row * max_cols + idx]['나라']}</p>
-                            <p><strong>도시:</strong> {filtered_df.iloc[row * max_cols + idx]['도시']}</p>
-                            <p><strong>호텔 등급:</strong> {filtered_df.iloc[row * max_cols + idx]['호텔 등급']}성급</p>
-                            <p><strong>편의시설:</strong> {filtered_df.iloc[row * max_cols + idx]['편의시설']}</p>
+                            <h3>{filtered_df.iloc[row * max_cols + idx]['HotelName']}</h3>
+                            <p><strong>countyName:</strong> {filtered_df.iloc[row * max_cols + idx]['countyName']}</p>
+                            <p><strong>cityName:</strong> {filtered_df.iloc[row * max_cols + idx]['cityName']}</p>
+                            <p><strong>HotelRating:</strong> {filtered_df.iloc[row * max_cols + idx]['HotelRating']}</p>
+                            <p><strong>Address:</strong> {filtered_df.iloc[row * max_cols + idx]['Address']}</p>
                         </div>
                         """
                         st.markdown(card_html, unsafe_allow_html=True)
@@ -171,11 +162,11 @@ def main():
                     with cols[idx]:
                         card_html = f"""
                         <div class="card">
-                            <h3>{filtered_df.iloc[num_full_rows * max_cols + idx]['숙소명']}</h3>
-                            <p><strong>나라:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['나라']}</p>
-                            <p><strong>도시:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['도시']}</p>
-                            <p><strong>호텔 등급:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['호텔 등급']}성급</p>
-                            <p><strong>편의시설:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['편의시설']}</p>
+                            <h3>{filtered_df.iloc[num_full_rows * max_cols + idx]['HotelName']}</h3>
+                            <p><strong>countyName:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['countyName']}</p>
+                            <p><strong>cityName:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['cityName']}</p>
+                            <p><strong>HotelRating:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['HotelRating']}</p>
+                            <p><strong>Address:</strong> {filtered_df.iloc[num_full_rows * max_cols + idx]['Address']}</p>
                         </div>
                         """
                         st.markdown(card_html, unsafe_allow_html=True)
